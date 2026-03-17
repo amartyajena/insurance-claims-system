@@ -1,0 +1,221 @@
+services:
+  postgres-auth:
+    image: postgres:15
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+
+  postgres-customer:
+    image: postgres:15
+    container_name: postgres-customer
+    environment:
+      POSTGRES_DB: customer_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5434:5432"
+    volumes:
+      - customer_postgres_data:/var/lib/postgresql/data
+
+  postgres-policy:
+    image: postgres:15
+    container_name: postgres-policy
+    environment:
+      POSTGRES_DB: policy_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5435:5432"
+    volumes:
+      - policy_postgres_data:/var/lib/postgresql/data
+
+  postgres-claim:
+    image: postgres:15
+    container_name: postgres-claim
+    environment:
+      POSTGRES_DB: claim_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5436:5432"
+    volumes:
+      - claim_postgres_data:/var/lib/postgresql/data
+
+  postgres-document:
+    image: postgres:15
+    container_name: postgres-document
+    environment:
+      POSTGRES_DB: document_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5437:5432"
+    volumes:
+      - document_postgres_data:/var/lib/postgresql/data
+
+  postgres-notification:
+    image: postgres:15
+    container_name: postgres-notification
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "5438:5432"
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
+
+  postgres-audit:
+    image: postgres:15
+    container_name: postgres-audit
+    environment:
+      POSTGRES_DB: audit_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SPRING_PROFILES_ACTIVE: docker    
+    ports:
+      - "5439:5432"
+    volumes:
+      - audit_postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: appuser
+      RABBITMQ_DEFAULT_PASS: apppassword
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres-auth
+
+  customer-service:
+    build:
+      context: ./customer-service
+    container_name: customer-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres-customer
+
+  policy-service:
+    build:
+      context: ./policy-service
+    container_name: policy-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres-policy
+
+  claim-service:
+    build:
+      context: ./claim-service
+    container_name: claim-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres-claim
+      - rabbitmq
+      - customer-service
+      - policy-service
+
+  document-service:
+    build:
+      context: ./document-service
+    container_name: document-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - postgres-document
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - postgres-notification
+      - rabbitmq
+
+  audit-service:
+    build:
+      context: ./audit-service
+    container_name: audit-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - postgres-audit
+      - rabbitmq
+      
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - customer-service
+      - policy-service
+      - claim-service
+      - document-service
+      - notification-service
+      - audit-service
+      
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - api-gateway
+      - auth-service
+      - customer-service
+      - policy-service
+      - claim-service
+      - document-service
+      - notification-service
+      - audit-service
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  auth_postgres_data:
+  customer_postgres_data:
+  policy_postgres_data:
+  claim_postgres_data:
+  document_postgres_data:
+  notification_postgres_data:
+  audit_postgres_data:
+  grafana_data:

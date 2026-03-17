@@ -1,0 +1,29 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+
+# Upload folders
+uploads/
+
+# Jenkins local data if any
+jenkins_home/
+
+# Grafana / Prometheus temp files if any
+*.tmp
